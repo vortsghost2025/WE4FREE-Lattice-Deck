@@ -1,1 +1,50 @@
 @import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+  }
+
+  code, pre {
+    font-family: var(--font-geist-mono), monospace;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.3);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.5);
+  }
+
+  ::selection {
+    background-color: rgba(99, 102, 241, 0.3);
+  }
+}
+
+@layer components {
+  .live-pulse {
+    position: relative;
+  }
+  .live-pulse::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    border: 2px solid rgba(99, 102, 241, 0.5);
+    animation: liveRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes liveRing {
+    0% { transform: scale(1); opacity: 0.5; }
+    70% { transform: scale(1.5); opacity: 0; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+}
