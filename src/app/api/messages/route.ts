@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { fetchMessages, createMessage, type SendMessageRequest } from '@/lib/services/dataAdapter';
+import { fetchMessages, createMessage } from '@/lib/services/dataAdapter';
+import type { SendMessageRequest } from '@/lib/services/dataAdapter';
 
 export async function GET() {
   return NextResponse.json(fetchMessages());

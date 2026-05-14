@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useData } from '@/lib/hooks/useData';
 import { Card } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import {
   Send, CheckCircle2, Clock, AlertTriangle, MessageSquare,
   Server, LayoutDashboard, Shield, RefreshCw, Tv, ChevronDown, ChevronUp, XCircle,
 } from 'lucide-react';
+import type { LaneStatusContract } from '@/lib/contracts/types';
 
 const lanes = [
   { id: 'archivist', name: 'Archivist', icon: <Shield size={14} /> },
@@ -191,24 +192,24 @@ export default function MessagingPage() {
         )}
 
         <Card title="Message History" icon={<Clock size={16} />}>
-          <div className="space-y-3">
-            {laneData?.length && (() => {
-              // Show contract-typed mock messages using real lane IDs
-              const sampleMsgs: Array<{lane: string, msg: string}> = [
-                { lane: 'archivist', msg: 'Review last 48h changes. Classify progression/regression. Return timestamped audit.' },
-                { lane: 'library', msg: 'Sovereignty check completed. Graph index scope under investigation.' },
-              ];
-              return sampleMsgs.map(({ lane, msg }) => {
-                const ld = laneData.find(l => l.id === lane);
+           <div className="space-y-3">
+             {laneData?.lanes?.length && (() => {
+               // Show contract-typed mock messages using real lane IDs
+               const sampleMsgs: Array<{lane: string, msg: string}> = [
+                 { lane: 'archivist', msg: 'Review last 48h changes. Classify progression/regression. Return timestamped audit.' },
+                 { lane: 'library', msg: 'Sovereignty check completed. Graph index scope under investigation.' },
+               ];
+               return sampleMsgs.map(({ lane, msg }) => {
+                 const ld = laneData.lanes.find((l): l is LaneStatusContract => l.id === lane);
                 return (
                   <div key={lane} className="flex items-start gap-3 p-3 rounded-lg bg-surface-900 border border-surface-700/30">
                     <Badge variant="info"><MessageSquare size={14} /></Badge>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-surface-100">lanes/{lane}/inbox</span>
-                        <Badge variant="high">high</Badge>
-                        <Badge variant="action-required">action-required</Badge>
-                      </div>
+                       <div className="flex items-center gap-2 flex-wrap">
+                         <span className="text-sm font-medium text-surface-100">lanes/{lane}/inbox</span>
+                         <Badge variant="high">high</Badge>
+                         <Badge variant="warning">action-required</Badge>
+                       </div>
                       <p className="text-sm text-surface-400 mt-1">{msg}</p>
                       <div className="flex items-center gap-4 mt-2 text-xs text-surface-500">
                         <span><Clock size={12} className="inline mr-0.5" />{timeAgo(new Date().toISOString())}</span>

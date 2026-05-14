@@ -153,3 +153,6 @@ export interface ContinuityResponse {
   continuity: ContinuityStateContract[];
   threshold: number;             // e.g. 93
 }
+
+// Re-export the primitive types for convenience
+export type { LaneId, EntityId, SurfaceId, Status, EventType, Priority, MessageType };

@@ -9,18 +9,20 @@ import type {
   LanesResponse,
   MessagePacketContract, MessagesResponse, SendMessageRequest,
   ContinuityStateContract, ContinuityResponse,
-} from './types';
+} from '../contracts/types';
+
+import type { LaneId, EventType } from '../types';
 
 import {
-  getLaneConfig, getControlPlane, getSurfaceMatrix,
-  getTimeline, getMessages, getContinuity, getCatchUp,
+  mockLaneStatuses, mockControlPlane, surfaceMatrix,
+  mockTimeline, mockMessages, mockContinuity,
 } from '../mock-data';
 
 // ─────────────────────────────────────────────
 // Mappers: internal → contract
 // ─────────────────────────────────────────────
 
-function toLaneStatusContract(lane: ReturnType<typeof getLaneConfig>[number]): LaneStatusContract {
+function toLaneStatusContract(lane: typeof mockLaneStatuses[number]): LaneStatusContract {
   return {
     id: lane.id,
     name: lane.name,
@@ -47,7 +49,7 @@ function toLaneStatusContract(lane: ReturnType<typeof getLaneConfig>[number]): L
   };
 }
 
-function toControlPlaneContract(cp: ReturnType<typeof getControlPlane>): ControlPlaneContract {
+function toControlPlaneContract(cp: typeof mockControlPlane): ControlPlaneContract {
   return {
     id: cp.id as 'control-plane',
     name: cp.name,
@@ -66,7 +68,7 @@ function toControlPlaneContract(cp: ReturnType<typeof getControlPlane>): Control
   };
 }
 
-function toTimelineEventContract(event: ReturnType<typeof getTimeline>[number]): TimelineEventContract {
+function toTimelineEventContract(event: typeof mockTimeline[number]): TimelineEventContract {
   return {
     id: event.id,
     timestamp: event.timestamp,
@@ -82,7 +84,7 @@ function toTimelineEventContract(event: ReturnType<typeof getTimeline>[number]):
   };
 }
 
-function toMessagePacketContract(msg: ReturnType<typeof getMessages>[number]): MessagePacketContract {
+function toMessagePacketContract(msg: typeof mockMessages[number]): MessagePacketContract {
   return {
     id: msg.id,
     to: msg.to,
@@ -107,13 +109,13 @@ function toMessagePacketContract(msg: ReturnType<typeof getMessages>[number]): M
 
 export function fetchStatus(): StatusResponse {
   return {
-    lanes: getLaneConfig().map(toLaneStatusContract),
-    controlPlane: toControlPlaneContract(getControlPlane()),
+    lanes: mockLaneStatuses.map(toLaneStatusContract),
+    controlPlane: toControlPlaneContract(mockControlPlane),
   };
 }
 
 export function fetchTimeline(hours: number = 48, lane?: string, type?: string): TimelineResponse {
-  const allEvents = getTimeline();
+  const allEvents = mockTimeline;
   const cutoff = new Date(Date.now() - hours * 3600000);
   let events = allEvents.filter(e => new Date(e.timestamp) >= cutoff);
 
@@ -135,14 +137,14 @@ export function fetchTimeline(hours: number = 48, lane?: string, type?: string):
 }
 
 export function fetchLanes(): LanesResponse {
-  const lanes = getLaneConfig().map(toLaneStatusContract);
-  const cp = toControlPlaneContract(getControlPlane());
+  const lanes = mockLaneStatuses.map(toLaneStatusContract);
+  const cp = toControlPlaneContract(mockControlPlane);
   return { lanes, controlPlane: cp, entities: [...lanes, cp] };
 }
 
 export function fetchMessages(): MessagesResponse {
   return {
-    messages: getMessages().map(toMessagePacketContract),
+    messages: mockMessages.map(toMessagePacketContract),
   };
 }
 
@@ -168,10 +170,10 @@ export function createMessage(body: SendMessageRequest): { message: MessagePacke
 
 export function fetchContinuity(): ContinuityResponse {
   return {
-    continuity: getContinuity(),
+    continuity: mockContinuity,
     threshold: 93,
   };
 }
 
-// Expose raw catch-up data (no contract transform needed — stays internal to Catch Me Up)
-export { getCatchUp };
+// Export types for external use
+export type { SendMessageRequest };
