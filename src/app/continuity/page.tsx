@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ContinuityState } from '@/lib/types';
 import { LayoutShell } from '@/components/layout/shell';
 import {
   Activity,

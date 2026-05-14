@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 
-type BadgeVariant = 'active' | 'idle' | 'blocked' | 'quarantined' | 'needs-operator' | 'syncing' | 'success' | 'warning' | 'error' | 'info' | 'progression' | 'regression' | 'repair' | 'undo' | 'overwrite' | 'duplication' | 'reconciliation' | 'infrastructure' | 'unknown' | 'critical' | 'high';
+type BadgeVariant = 'active' | 'idle' | 'blocked' | 'quarantined' | 'needs-operator' | 'syncing' | 'success' | 'warning' | 'error' | 'info' | 'progression' | 'regression' | 'repair' | 'undo' | 'overwrite' | 'duplication' | 'reconciliation' | 'infrastructure' | 'unknown' | 'critical' | 'high' | 'normal' | 'low';
 
 interface BadgeProps {
   variant: BadgeVariant;
@@ -31,6 +31,10 @@ const variantStyles: Record<BadgeVariant, string> = {
   reconciliation: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
   infrastructure: 'bg-neutral-600/30 text-neutral-400 border-neutral-500/30',
   unknown: 'bg-neutral-700 text-neutral-300 border-neutral-600/30',
+  critical: 'bg-red-500/15 text-red-400 border-red-500/30',
+  high: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
+  normal: 'bg-neutral-700/30 text-neutral-400 border-neutral-600/30',
+  low: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
 };
 
 export function Badge({ variant, children, className = '', icon }: BadgeProps) {
