@@ -47,4 +47,4 @@
 
 ## Location
 - Project root: `S:\WE4FREE-Lattice-Deck`
-- Git branch: `main`, remote up to date
+- Git branch: `main`, remote up to date (latest: `ca81481` — test/CI hardening pushed 2026-05-15)
