@@ -224,10 +224,11 @@ export function createMessage(request: SendMessageRequest): MessagePacket {
   };
 }
 
-// Briefing layer function
+// Briefing layer function (mock-only; use /api/briefing for git-merged data)
 export async function fetchBriefingData() {
   const status = fetchStatus();
-  const timeline = fetchTimeline(); // default: last 48 hours, all lanes, all types
+  const timeline = fetchTimeline();
   const continuity = fetchContinuity();
+
   return buildBriefingFromStatus(status, timeline, continuity);
 }

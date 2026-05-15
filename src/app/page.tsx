@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchBriefingData } from '@/lib/services/dataAdapter';
+
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusDot } from '@/components/ui/status-dot';
@@ -17,7 +17,9 @@ export default function BriefingPage() {
     const loadBriefing = async () => {
       try {
         setLoading(true);
-        const data = await fetchBriefingData();
+        const res = await fetch('/api/briefing');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
         setBriefing(data);
         setError(null);
       } catch (err) {
@@ -73,9 +75,65 @@ export default function BriefingPage() {
         {/* Card 1: Since You Last Checked */}
         <Card title={"🕒 Since You Last Checked"} className="border-indigo-500/20">
           <div className="p-4">
-            <p className="text-sm text-surface-300">
+            <p className="text-sm text-surface-300 mb-3">
               {briefing.sinceLastChecked?.summary || 'No recent activity'}
             </p>
+            {briefing.sinceLastChecked?.notableChange && (
+              <div className={`mb-3 px-3 py-2 rounded-md border ${
+                briefing.sinceLastChecked.notableChange.severity === 'critical'
+                  ? 'border-red-500/30 bg-red-500/5'
+                  : briefing.sinceLastChecked.notableChange.severity === 'warning'
+                  ? 'border-yellow-500/30 bg-yellow-500/5'
+                  : 'border-blue-500/30 bg-blue-500/5'
+              }`}>
+                <p className="text-xs font-medium text-surface-200">
+                  {briefing.sinceLastChecked.notableChange.title}
+                </p>
+                <p className="text-xs text-surface-400 mt-0.5">
+                  {briefing.sinceLastChecked.notableChange.description}
+                </p>
+              </div>
+            )}
+            {briefing.sinceLastChecked?.events?.length > 0 && (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {briefing.sinceLastChecked.events.slice(0, 8).map((event: any, idx: number) => {
+                  const typeColors: Record<string, string> = {
+                    PROGRESSION: 'text-emerald-400 border-emerald-500/30',
+                    REGRESSION: 'text-red-400 border-red-500/30',
+                    REPAIR: 'text-blue-400 border-blue-500/30',
+                    UNDO: 'text-orange-400 border-orange-500/30',
+                    INFRASTRUCTURE: 'text-surface-400 border-surface-500/30',
+                    RECONCILIATION: 'text-purple-400 border-purple-500/30',
+                    DUPLICATION: 'text-yellow-400 border-yellow-500/30',
+                    OVERWRITE: 'text-pink-400 border-pink-500/30',
+                    UNKNOWN: 'text-surface-400 border-surface-500/30',
+                  };
+                  const colorClass = typeColors[event.type] || typeColors.UNKNOWN;
+                  const isGit = event.id?.startsWith('git-');
+                  const timeStr = event.timestamp
+                    ? new Date(event.timestamp).toLocaleString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '';
+                  return (
+                    <div key={event.id || idx} className="flex items-start gap-2 text-xs">
+                      <span className={`shrink-0 mt-0.5 px-1.5 py-0 rounded border font-mono ${colorClass}`}>
+                        {event.type}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-surface-200 truncate">{event.title}</p>
+                        <p className="text-surface-500">
+                          {timeStr}{event.gitRef ? ` · ${event.gitRef}` : ''}{isGit ? ' · git' : ''}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </Card>
 
