@@ -182,10 +182,24 @@ export interface Provenance {
 // LEGACY COMPAT: Map existing contract types → Briefing types
 // ─────────────────────────────────────────────
 
+export interface GitStatusEnrichment {
+  branch: string;
+  ahead: number;
+  behind: number;
+  modified: number;
+  untracked: number;
+  staged: number;
+  conflicted: number;
+  stashed: number;
+  isClean: boolean;
+  hasDiverged: boolean;
+}
+
 export function buildBriefingFromStatus(
   status: import('./types').StatusResponse,
   timeline: import('./types').TimelineResponse,
-  continuity: import('./types').ContinuityResponse
+  continuity: import('./types').ContinuityResponse,
+  gitStatus: GitStatusEnrichment | null = null
 ): BriefingResponse {
   const now = new Date().toISOString();
 
@@ -218,7 +232,7 @@ export function buildBriefingFromStatus(
       }
     : null;
 
-  // Card 2: Active Right Now
+  // Card 2: Active Right Now — enriched with git branch divergence
   const activeLanes = status.lanes.map(l => ({
     id: l.id as LaneId,
     name: l.name,
@@ -229,7 +243,11 @@ export function buildBriefingFromStatus(
     surfaces: l.activeSurfaces,
   }));
 
-  // Card 3: Needs Sean
+  const cpActiveLaneCount = gitStatus
+    ? activeLanes.filter(l => l.status === 'active').length
+    : status.controlPlane.activeLaneCount;
+
+  // Card 3: Needs Sean — enriched with git-status-derived blockers
   const decisions: DecisionNeeded[] = [];
   const blockers: Blocker[] = [];
   const warnings: Warning[] = [];
@@ -265,6 +283,44 @@ export function buildBriefingFromStatus(
     }
   });
 
+  // Enrich Card 3 with real git status blockers
+  if (gitStatus) {
+    if (gitStatus.hasDiverged) {
+      blockers.push({
+        id: 'git-diverged',
+        title: 'Branch diverged from remote',
+        description: `Local branch is ${gitStatus.ahead} ahead and ${gitStatus.behind} behind remote — merge or rebase required`,
+        laneId: 'control-plane' as EntityId,
+        since: now,
+      });
+    }
+    if (gitStatus.conflicted > 0) {
+      blockers.push({
+        id: 'git-conflicts',
+        title: `${gitStatus.conflicted} merge conflict${gitStatus.conflicted > 1 ? 's' : ''}`,
+        description: `${gitStatus.conflicted} conflicted file${gitStatus.conflicted > 1 ? 's' : ''} blocking progress — resolve before continuing`,
+        laneId: 'control-plane' as EntityId,
+        since: now,
+      });
+    }
+    if (gitStatus.modified > 0 && gitStatus.untracked > 0) {
+      warnings.push({
+        id: 'git-uncommitted',
+        title: `${gitStatus.modified + gitStatus.untracked} uncommitted change${(gitStatus.modified + gitStatus.untracked) > 1 ? 's' : ''}`,
+        description: `${gitStatus.modified} modified, ${gitStatus.untracked} untracked — consider committing or stashing`,
+        laneId: 'control-plane' as EntityId,
+      });
+    }
+    if (gitStatus.ahead > 0 && !gitStatus.hasDiverged) {
+      warnings.push({
+        id: 'git-ahead',
+        title: `${gitStatus.ahead} unpushed commit${gitStatus.ahead > 1 ? 's' : ''}`,
+        description: 'Local commits not yet pushed to remote',
+        laneId: 'control-plane' as EntityId,
+      });
+    }
+  }
+
   if (status.controlPlane.pendingDecisions > 0) {
     decisions.push({
       id: 'decision-cp',
@@ -277,35 +333,57 @@ export function buildBriefingFromStatus(
     });
   }
 
-  // Card 4: Autonomy Progress
-  const autonomyLanes = continuity.continuity.map(c => ({
-    id: c.laneId as LaneId,
-    name: c.laneId === 'control-plane' ? 'Control Plane' : c.laneId.charAt(0).toUpperCase() + c.laneId.slice(1),
-    status: c.status,
-    currentStep: c.currentStep,
-    passRate: c.passRate,
-    iteration: null,  // Filled from timeline events (not implemented yet)
-    lastAction: c.details,
-    trend: computeTrend(c.passRate),
-  }));
+  // Card 4: Autonomy Progress — enriched with timeline iteration counts + classification ratios
+  const eventsByLane = new Map<string, typeof timeline.events>();
+  for (const e of timeline.events) {
+    const existing = eventsByLane.get(e.laneId) || [];
+    existing.push(e);
+    eventsByLane.set(e.laneId, existing);
+  }
+
+  const autonomyLanes = continuity.continuity.map(c => {
+    const laneEvents = eventsByLane.get(c.laneId) || [];
+    const autonomousCount = laneEvents.filter(e => e.classification === 'autonomous').length;
+    const totalCount = laneEvents.length;
+    const autonomousRatio = totalCount > 0 ? Math.round((autonomousCount / totalCount) * 100) : null;
+
+    return {
+      id: c.laneId as LaneId,
+      name: c.laneId === 'control-plane' ? 'Control Plane' : c.laneId.charAt(0).toUpperCase() + c.laneId.slice(1),
+      status: c.status,
+      currentStep: c.currentStep,
+      passRate: c.passRate,
+      iteration: totalCount,
+      lastAction: c.details,
+      trend: computeTrend(c.passRate),
+      autonomousRatio,
+    };
+  });
 
   const avgPassRate = continuity.continuity.reduce((a, c) => a + (c.passRate || 0), 0)
     / continuity.continuity.length;
 
-  // Card 5: Most Important Insight
+  const totalAutonomous = timeline.events.filter(e => e.classification === 'autonomous').length;
+  const totalOperator = timeline.events.filter(e => e.classification === 'operator').length;
+
+  // Card 5: Most Important Insight — enriched with pattern detection from timeline
   let headline = 'All systems nominal';
   let body = 'No action required at this time.';
   let actionSuggested: string | null = null;
   let confidence = 8;
+  const insightNotes: string[] = [];
+
+  // Pattern: regression cluster (2+ regressions in recent events)
+  const recentEventSlice = timeline.events.slice(0, 10);
+  const recentRegressions = recentEventSlice.filter(e => e.type === 'REGRESSION');
 
   if (blockers.length > 0) {
     headline = `${blockers.length} blocker${blockers.length > 1 ? 's' : ''} need attention`;
     body = `${blockers.length} lane${blockers.length > 1 ? 's have' : ' has'} open blockers. The most critical is on the ${status.lanes.find(l => l.blockerCount > 0)?.name || 'unknown'} lane.`;
     actionSuggested = `Review blockers on the ${status.lanes.find(l => l.blockerCount > 0)?.name || 'unknown'} lane and take action.`;
     confidence = 9;
-  }
-
-  if (decisions.length > 0) {
+    insightNotes.push('Blocker-driven insight');
+  } else if (decisions.length > 0) {
     const criticalDecisions = decisions.filter(d => d.priority === 'critical');
     headline = criticalDecisions.length > 0
       ? `${criticalDecisions.length} critical decision${criticalDecisions.length > 1 ? 's' : ''} pending`
@@ -313,19 +391,30 @@ export function buildBriefingFromStatus(
     body = decisions.map(d => `${d.title}: ${d.description}`).join('. ');
     actionSuggested = 'Review and act on the pending decisions.';
     confidence = 8;
-  }
-
-  if (warnings.length > 0) {
+    insightNotes.push('Decision-driven insight');
+  } else if (recentRegressions.length >= 2) {
+    headline = `${recentRegressions.length} regressions in last 10 events`;
+    body = `Regression cluster detected across ${[...new Set(recentRegressions.map(r => r.laneId))].join(', ')}. ${repairs.length > 0 ? `${repairs.length} repair${repairs.length > 1 ? 's' : ''} in progress.` : 'No repairs initiated yet — autonomous recovery may be stalled.'}`;
+    actionSuggested = 'Investigate regression cluster and verify repair agents are responding.';
+    confidence = 8;
+    insightNotes.push('Regression cluster pattern');
+  } else if (warnings.length > 0) {
     headline = `${warnings.length} drift warning${warnings.length > 1 ? 's' : ''}`;
     body = `${warnings.length} lane${warnings.length > 1 ? 's show' : ' shows'} drift — deviation from expected state detected.`;
     actionSuggested = 'Investigate drift warnings to prevent escalation.';
     confidence = 7;
-  }
-
-  if (regressions.length > 0 && blockers.length === 0) {
+    insightNotes.push('Drift-driven insight');
+  } else if (regressions.length > 0) {
     headline = `${regressions.length} recent regression${regressions.length > 1 ? 's' : ''}`;
-    body = `${regressions.length} regressiv${regressions.length > 1 ? 'e events' : 'e event'} detected. ${repairs.length > 0 ? `${repairs.length} repair${repairs.length > 1 ? 's' : ''} already in progress.` : 'No repairs initiated yet.'}`;
+    body = `${regressions.length} regression${regressions.length > 1 ? 's' : ''} detected. ${repairs.length > 0 ? `${repairs.length} repair${repairs.length > 1 ? 's' : ''} already in progress.` : 'No repairs initiated yet.'}`;
     confidence = 7;
+    insightNotes.push('Regression-driven insight');
+  } else if (gitStatus && !gitStatus.isClean) {
+    headline = 'Working tree has uncommitted changes';
+    body = `${gitStatus.modified} modified, ${gitStatus.untracked} untracked, ${gitStatus.staged} staged files. ${gitStatus.stashed > 0 ? `${gitStatus.stashed} stash${gitStatus.stashed > 1 ? 'es' : ''} pending.` : ''}`;
+    actionSuggested = 'Commit or stash changes to keep working tree clean.';
+    confidence = 7;
+    insightNotes.push('Git working tree insight');
   }
 
   // System health
@@ -335,6 +424,13 @@ export function buildBriefingFromStatus(
   } else if (blockers.length > 0 || warnings.length > 0 || decisions.length > 0) {
     systemHealth = 'degraded';
   }
+  if (gitStatus && gitStatus.conflicted > 0) {
+    systemHealth = 'critical';
+  }
+
+  const gitBranchInfo = gitStatus
+    ? `${gitStatus.branch}${gitStatus.ahead > 0 ? ` ↑${gitStatus.ahead}` : ''}${gitStatus.behind > 0 ? ` ↓${gitStatus.behind}` : ''}${gitStatus.isClean ? ' ✓' : ' ⚡'}`
+    : null;
 
   return {
     sinceLastChecked: {
@@ -347,7 +443,7 @@ export function buildBriefingFromStatus(
       controlPlane: {
         status: status.controlPlane.status,
         currentTask: status.controlPlane.currentTask,
-        activeLanes: status.controlPlane.activeLaneCount,
+        activeLanes: cpActiveLaneCount,
         pendingDecisions: status.controlPlane.pendingDecisions,
         messageQueueDepth: status.controlPlane.messageQueueDepth,
       },
@@ -375,19 +471,21 @@ export function buildBriefingFromStatus(
       headline,
       body,
       supportingData: [
-        { label: 'Active Lanes', value: `${status.controlPlane.activeLaneCount}/4` },
+        { label: 'Active Lanes', value: `${cpActiveLaneCount}/4` },
         { label: 'Blockers', value: String(blockers.length), trend: blockers.length > 0 ? 'up' : 'flat' },
         { label: 'Avg Pass Rate', value: `${Math.round(avgPassRate)}%`, trend: avgPassRate >= 93 ? 'up' : avgPassRate >= 85 ? 'flat' : 'down' },
         { label: 'Recent Regressions', value: String(regressions.length), trend: regressions.length > 0 ? 'down' : 'flat' },
+        ...(gitBranchInfo ? [{ label: 'Git Branch', value: gitBranchInfo, trend: gitStatus?.isClean ? 'flat' as const : 'down' as const }] : []),
+        { label: 'Autonomous Ratio', value: timeline.events.length > 0 ? `${Math.round((totalAutonomous / timeline.events.length) * 100)}%` : 'N/A', trend: totalAutonomous >= totalOperator * 2 ? 'up' as const : 'flat' as const },
       ],
       attribution: {
         agentId: 'we4free-briefing-agent-v1',
-        agentVersion: '1.0.0',
+        agentVersion: '1.1.0',
         model: null,
         generatedAt: now,
         sourceHashes: {},
         confidence,
-        notes: 'Briefing synthesized from status, timeline, and continuity data',
+        notes: insightNotes.length > 0 ? insightNotes.join('; ') : 'Briefing synthesized from status, timeline, and continuity data',
       },
       actionSuggested,
       confidence,
@@ -395,20 +493,19 @@ export function buildBriefingFromStatus(
     generatedAt: now,
     agentProvenance: {
       agentId: 'we4free-briefing-agent-v1',
-      agentVersion: '1.0.0',
+      agentVersion: '1.1.0',
       model: null,
       generatedAt: now,
       sourceHashes: {},
       confidence: 9,
-      notes: `Built from: status (${status.lanes.length} lanes), timeline (${timeline.events.length} events), continuity (${continuity.continuity.length} lanes)`,
+      notes: `Built from: status (${status.lanes.length} lanes), timeline (${timeline.events.length} events), continuity (${continuity.continuity.length} lanes)${gitStatus ? `, git (${gitStatus.branch})` : ''}`,
     },
-    systemHealth, // Add the systemHealth field
+  systemHealth,
   };
 }
 
 function computeTrend(passRate: number | null): 'improving' | 'stable' | 'declining' {
   if (passRate === null) return 'stable';
-  // Simple heuristic: if passRate > 95 improving, < 90 declining, else stable
   if (passRate > 95) return 'improving';
   if (passRate < 90) return 'declining';
   return 'stable';

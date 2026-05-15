@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fetchStatus, fetchTimeline, fetchContinuity } from '@/lib/services/dataAdapter';
 import { buildBriefingFromStatus } from '@/lib/contracts/briefing';
 import { getGitTimelineEvents } from '@/lib/services/git-commit-adapter';
+import { readGitStatus } from '@/lib/services/git-status-adapter';
 
 export async function GET() {
   const status = fetchStatus();
@@ -9,6 +10,7 @@ export async function GET() {
   const continuity = fetchContinuity();
 
   let mergedTimeline = timeline;
+
   try {
     const gitEvents = getGitTimelineEvents();
     if (gitEvents.length > 0) {
@@ -26,6 +28,13 @@ export async function GET() {
     // Git unavailable — fall back to mock-only timeline
   }
 
-  const briefing = buildBriefingFromStatus(status, mergedTimeline, continuity);
+  let gitStatus = null;
+  try {
+    gitStatus = readGitStatus();
+  } catch {
+    // Git status unavailable
+  }
+
+  const briefing = buildBriefingFromStatus(status, mergedTimeline, continuity, gitStatus);
   return NextResponse.json(briefing);
 }
