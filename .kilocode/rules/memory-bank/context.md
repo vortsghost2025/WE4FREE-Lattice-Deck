@@ -13,14 +13,25 @@
 
 ### Git-Commit Adapter (Real Data Wiring — Stage 1.5)
 - **`src/lib/services/git-commit-adapter.ts`**: reads real git log via `execSync`, parses into `GitCommitRaw[]`, transforms into `TimelineEventContract[]`
-  - `parseGitLog` — splits git log output on `---COMMIT---` delimiter, validates hex hashes
-  - `inferEventType` — maps conventional commit prefixes → EventType (UNDO checked before REPAIR to avoid shadowing)
-  - `inferLaneId` — scans subject+body for lane keywords, defaults to `kernel`
-  - `inferClassification` — maps conventional prefixes → `autonomous`, wip/manual/operator → `operator`
-  - `getGitTimelineEvents` — orchestrates read+transform with fallbackOnError
-- **`/api/briefing` route**: server-side only — merges git events into mock timeline (deduped by id, sorted desc), falls back to mock-only on error
+- `parseGitLog` — splits git log output on `---COMMIT---` delimiter, validates hex hashes
+- `inferEventType` — maps conventional commit prefixes → EventType (UNDO checked before REPAIR to avoid shadowing)
+- `inferLaneId` — scans subject+body for lane keywords, defaults to `kernel`
+- `inferClassification` — maps conventional prefixes → `autonomous`, wip/manual/operator → `operator`
+- `getGitTimelineEvents` — orchestrates read+transform with fallbackOnError
+- **`/api/briefing` route**: server-side only — merges git events into mock timeline (deduped by id, sorted desc), falls back to mock-only on error; also calls `readGitStatus()` and passes to builder
 - **`dataAdapter.ts`**: reverted to client-safe (no `child_process` import); `fetchBriefingData` returns mock-only briefing
 - **Card 1 enrichment**: notableChange with severity-colored border, event list (up to 8) with type-colored badges, timestamps, gitRef, git indicator
+
+### Git-Status Adapter + Cards 2-5 Enrichment (Stage 1.6)
+- **`src/lib/services/git-status-adapter.ts`**: reads working tree status via `git status --porcelain=2`, parses branch, ahead/behind, staged/modified/conflicted/untracked/stashed counts, isClean, hasDiverged
+- **`GitStatusEnrichment` interface** added to `briefing.ts` contract layer — mirrors `GitStatusResult` but decoupled from adapter
+- **`buildBriefingFromStatus`** now accepts optional 4th param `gitStatus: GitStatusEnrichment | null`
+- **Card 2 (Active Now)**: git uncommitted changes surfaced as blockers with `'control-plane'` laneId
+- **Card 3 (Needs Sean)**: iteration counts derived from timeline events grouped by laneId via Map
+- **Card 4 (Autonomy Progress)**: derived from continuity + timeline event grouping
+- **Card 5 (Most Important Insight)**: priority chain — blockers > decisions > regression cluster ≥2 > drift warnings > regressions > git uncommitted changes
+- **Agent version** bumped `1.0.0` → `1.1.0`
+- **Duplicate old code removed** from `briefing.ts` — single enriched function + single `computeTrend`
 
 ### Test Infrastructure
 - **vitest** v1.6.1 installed as dev dependency
@@ -38,6 +49,9 @@
 - Git event ids prefixed `git-` + shortHash for namespace separation
 - Event dedup by id set prevents mock+git duplicates
 - Card 1 type badge colors: PROGRESSION=emerald, REGRESSION=red, REPAIR=blue, UNDO=orange, INFRASTRUCTURE=surface, RECONCILIATION=purple, DUPLICATION=yellow, OVERWRITE=pink
+- `GitStatusEnrichment` interface in contract layer for decoupling from adapter
+- Card 3 git blockers use `'control-plane'` as laneId — git status is lane-agnostic
+- Card 5 insight priority order: blockers > decisions > regression cluster ≥2 > drift warnings > regressions > git uncommitted changes
 
 ### Architecture
 - monorepo at session root, git-tracked, pushed to origin
@@ -57,7 +71,6 @@
 - Accessibility-first (semantic HTML, text labels alongside icons)
 
 ## Next Steps
-- **Enrich Cards 2–5** with real data where applicable
 - **Stage 2**: Messaging relay endpoint integration (safe queue, not direct SSH)
 - **Stage 3**: Live agent tracking (real-time heartbeats via SSE/websocket)
 - **Stage 4**: Evolution intelligence (automatic regression detection)
@@ -66,4 +79,4 @@
 
 ## Location
 - Project root: `S:\WE4FREE-Lattice-Deck`
-- Git branch: `main`, remote up to date (latest: `485affd` — git-commit adapter + Card 1 enrichment + API route pushed 2026-05-15)
+- Git branch: `main`, remote up to date (latest: `2cbbe3e` — git-status adapter, Cards 2-5 enrichment, duplicate removal pushed 2026-05-15)
