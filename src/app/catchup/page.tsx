@@ -5,7 +5,7 @@ import { useData } from '@/lib/hooks/useData';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LayoutShell } from '@/components/layout/shell';
-import { Header } from '@/components/layout/sidebar';
+import { PageContent } from '@/components/layout/page-content';
 import {
   AlertTriangle, CheckCircle2, Clock, GitBranch, Activity,
   RefreshCw, Copy, MessageSquare, Filter, ChevronDown, ChevronUp, XCircle, Shield,
@@ -69,7 +69,7 @@ function SectionHeader({ icon, title, badge }: { icon: React.ReactNode; title: s
   return (
     <div className="flex items-center gap-2 mb-3">
       <span className="text-lg">{icon}</span>
-      <h3 className="text-sm font-semibold text-surface-100">{title}</h3>
+      <h3 className="text-base font-semibold text-neutral-100">{title}</h3>
       {badge && <Badge variant="info">{badge}</Badge>}
     </div>
   );
@@ -81,139 +81,169 @@ export default function CatchUpPage() {
 
   return (
     <LayoutShell title="Catch Me Up">
-      <div className="space-y-6">
-        <Card title="I Was Gone — Catch Me Up" icon={<Clock size={16} />} className="border-indigo-500/30">
-          <div className="text-center py-4">
-            <p className="text-sm text-surface-400 mb-4">Last catch-up: 38 min ago. 14 events since then.</p>
-            <div className="flex gap-3 justify-center">
-              <button onClick={() => setViewMode('human')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'human' ? 'bg-indigo-500 text-white' : 'bg-surface-800 text-surface-300 hover:bg-surface-700'}`}>
-                Human Summary
-              </button>
-              <button onClick={() => setViewMode('researcher')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'researcher' ? 'bg-indigo-500 text-white' : 'bg-surface-800 text-surface-300 hover:bg-surface-700'}`}>
-                Researcher View
-              </button>
-              <button className="px-4 py-2 rounded-lg text-sm font-medium bg-surface-800 text-orange-400 hover:bg-surface-700 transition-colors border border-orange-500/20">
-                ⚡ Operator Only
-              </button>
-            </div>
-          </div>
-        </Card>
-
-        <Card title="⚡ Decisions Needed" icon={<AlertTriangle size={16} />} className="border-red-500/20">
-          {catchUpStatic.operator.decisionsNeeded.map((d, i) => (
-            <div key={i} className="p-3 rounded-lg bg-red-500/5 border border-red-500/20 mb-3 last:mb-0">
-              <div className="flex items-start gap-2">
-                <Badge variant={d.priority}>{d.priority}</Badge>
-                <div>
-                  <div className="text-sm font-medium text-red-400">{d.title}</div>
-                  <p className="text-xs text-surface-400 mt-1">{d.description}</p>
-                </div>
+    <PageContent>
+      <h1 className="sr-only">Catch Me Up</h1>
+      <div className="space-y-5">
+          <Card title="I Was Gone — Catch Me Up" icon={<Clock size={16} />} className="border-indigo-500/30">
+            <div className="text-center py-3">
+              <p className="text-sm text-neutral-400 mb-4">Last catch-up: 38 min ago. 14 events since then.</p>
+              <div className="flex gap-3 justify-center">
+        <button onClick={() => setViewMode('human')} aria-pressed={viewMode === 'human'}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'human' ? 'bg-indigo-500 text-white' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'}`}>
+          Human Summary
+        </button>
+        <button onClick={() => setViewMode('researcher')} aria-pressed={viewMode === 'researcher'}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${viewMode === 'researcher' ? 'bg-indigo-500 text-white' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'}`}>
+                  Researcher View
+                </button>
+                <button className="px-4 py-2 rounded-lg text-sm font-medium bg-neutral-800 text-orange-400 hover:bg-neutral-700 transition-colors border border-orange-500/20">
+                  ⚡ Operator Only
+                </button>
               </div>
             </div>
-          ))}
-        </Card>
+          </Card>
 
-        {viewMode === 'human' ? (
-          <div className="space-y-4">
-            <Card><SectionHeader icon={<GitBranch size={14} />} title="What Changed" badge={String(catchUpStatic.humanReadable.whatChanged.length)} />
-              <ul className="space-y-2">
-                {catchUpStatic.humanReadable.whatChanged.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-surface-300"><CheckCircle2 size={14} className="text-green-400 mt-0.5 flex-shrink-0" />{item}</li>
-                ))}
-              </ul>
-            </Card>
-            <Card><SectionHeader icon={<XCircle size={14} />} title="What Broke" badge={String(catchUpStatic.humanReadable.whatBroke.length)} />
-              <ul className="space-y-2">
-                {catchUpStatic.humanReadable.whatBroke.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-surface-300"><XCircle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />{item}</li>
-                ))}
-              </ul>
-            </Card>
-            <Card><SectionHeader icon={<RefreshCw size={14} />} title="What Was Fixed" badge={String(catchUpStatic.humanReadable.whatWasFixed.length)} />
-              <ul className="space-y-2">
-                {catchUpStatic.humanReadable.whatWasFixed.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-surface-300"><Activity size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />{item}</li>
-                ))}
-              </ul>
-            </Card>
-            <Card><SectionHeader icon={<AlertTriangle size={14} />} title="Needs Your Attention" badge={String(catchUpStatic.humanReadable.whatNeedsOperator.length)} />
-              <ul className="space-y-2">
-                {catchUpStatic.humanReadable.whatNeedsOperator.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-orange-400"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />{item}</li>
-                ))}
-              </ul>
-            </Card>
-            <Card><SectionHeader icon={<MessageSquare size={14} />} title="Agents Involved" />
-              <div className="flex flex-wrap gap-2">
-                {catchUpStatic.humanReadable.whichAgents.map((a) => <Badge key={a} variant="info" className="text-xs">{a}</Badge>)}
-              </div>
-            </Card>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <Card><SectionHeader icon={<Activity size={14} />} title="Causal Chain" />
-              <div className="space-y-4">
-                {catchUpStatic.researcher.causalChain.map((ev, i) => (
-                  <div key={i} className="relative pl-6">
-                    {i < catchUpStatic.researcher.causalChain.length - 1 && <div className="absolute left-2 top-8 bottom-0 w-0.5 bg-surface-700" />}
-                    <div className="absolute left-0 top-1 w-3 h-3 rounded-full bg-indigo-500 border-2 border-surface-950" />
-                    <div className="text-sm">
-                      <span className="text-surface-400 text-xs">{ev.timestamp}</span>
-                      <p className="text-surface-200">{ev.event}</p>
-                      {ev.cause && <p className="text-xs text-surface-500 italic mt-1">Cause: {ev.cause}</p>}
+          <Card title="⚡ Decisions Needed" icon={<AlertTriangle size={16} />} className="border-red-500/20">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {catchUpStatic.operator.decisionsNeeded.map((d, i) => (
+                <div key={i} className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
+                  <div className="flex items-start gap-2">
+                    <Badge variant={d.priority}>{d.priority}</Badge>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-red-400">{d.title}</div>
+                      <p className="text-sm text-neutral-400 mt-1">{d.description}</p>
+                      <span className="text-xs text-neutral-400 mt-1 inline-block">Lane: {d.lane}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </Card>
-            <Card title="Git References" icon={<GitBranch size={16} />}>
-              <div className="flex flex-wrap gap-2">
-                {catchUpStatic.researcher.gitRefs.map(r => <Badge key={r} variant="info"><GitBranch size={12} className="mr-1" />{r}</Badge>)}
-              </div>
-            </Card>
-            <Card title="Artifacts" icon={<Copy size={16} />}>
-              <ul className="space-y-1">
-                {catchUpStatic.researcher.artifacts.map(p => <li key={p}><a href="#" className="text-indigo-400 hover:underline text-sm">{p}</a></li>)}
-              </ul>
-            </Card>
-            <Card title="Lane Attribution" icon={<Filter size={16} />}>
-              {Object.entries(catchUpStatic.researcher.laneAttribution).map(([lane, actions]) => (
-                <div key={lane} className="mb-3 last:mb-0">
-                  <div className="text-sm font-medium text-surface-200 capitalize mb-1">{lane}</div>
-                  <ul className="ml-3 space-y-0.5">
-                    {actions.map(a => <li key={a} className="text-xs text-surface-400">• {a}</li>)}
-                  </ul>
                 </div>
               ))}
-            </Card>
-            <Card title="Classification Summary" icon={<Shield size={16} />}>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center py-2 border-b border-surface-700/30">
-                  <span className="text-surface-400">Regression</span>
-                  <Badge variant="error">Library graph index scope explosion</Badge>
+            </div>
+          </Card>
+
+          {viewMode === 'human' ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-5">
+                  <Card>
+                    <SectionHeader icon={<GitBranch size={14} />} title="What Changed" badge={String(catchUpStatic.humanReadable.whatChanged.length)} />
+                    <ul className="space-y-2">
+                      {catchUpStatic.humanReadable.whatChanged.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-neutral-300">
+                          <CheckCircle2 size={14} className="text-green-400 mt-0.5 flex-shrink-0" />{item}
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                  <Card>
+                    <SectionHeader icon={<RefreshCw size={14} />} title="What Was Fixed" badge={String(catchUpStatic.humanReadable.whatWasFixed.length)} />
+                    <ul className="space-y-2">
+                      {catchUpStatic.humanReadable.whatWasFixed.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-neutral-300">
+                          <Activity size={14} className="text-cyan-400 mt-0.5 flex-shrink-0" />{item}
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-surface-700/30">
-                  <span className="text-surface-400">Progression</span>
-                  <Badge variant="progression">Archivist self-improvement enabled</Badge>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-surface-700/30">
-                  <span className="text-surface-400">Swarm & Kernel</span>
-                  <Badge variant="success">Stable — no regressions</Badge>
-                </div>
-                <div className="pt-2">
-                  <span className="text-xs text-surface-500">Unresolved Uncertainty:</span>
-                  <ul className="mt-1 space-y-0.5">
-                    <li className="text-xs text-yellow-400">• Library scope explosion root cause not confirmed</li>
-                    <li className="text-xs text-yellow-400">• Whether desktop revert fully resolved divergence</li>
-                  </ul>
+                <div className="space-y-5">
+                  <Card>
+                    <SectionHeader icon={<XCircle size={14} />} title="What Broke" badge={String(catchUpStatic.humanReadable.whatBroke.length)} />
+                    <ul className="space-y-2">
+                      {catchUpStatic.humanReadable.whatBroke.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-neutral-300">
+                          <XCircle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />{item}
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                  <Card>
+                    <SectionHeader icon={<AlertTriangle size={14} />} title="Needs Your Attention" badge={String(catchUpStatic.humanReadable.whatNeedsOperator.length)} />
+                    <ul className="space-y-2">
+                      {catchUpStatic.humanReadable.whatNeedsOperator.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-orange-400">
+                          <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />{item}
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
                 </div>
               </div>
-            </Card>
-          </div>
-        )}
-      </div>
+              <Card>
+                <SectionHeader icon={<MessageSquare size={14} />} title="Agents Involved" />
+                <div className="flex flex-wrap gap-2">
+                  {catchUpStatic.humanReadable.whichAgents.map((a) => <Badge key={a} variant="info" className="text-sm">{a}</Badge>)}
+                </div>
+              </Card>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+              <div className="lg:col-span-3">
+                <Card>
+                  <SectionHeader icon={<Activity size={14} />} title="Causal Chain" />
+                  <div className="space-y-4">
+                    {catchUpStatic.researcher.causalChain.map((ev, i) => (
+                      <div key={i} className="relative pl-6">
+                        {i < catchUpStatic.researcher.causalChain.length - 1 && <div className="absolute left-2 top-8 bottom-0 w-0.5 bg-neutral-700" />}
+                        <div className="absolute left-0 top-1 w-3 h-3 rounded-full bg-indigo-500 border-2 border-neutral-950" />
+                        <div className="text-sm">
+                          <span className="text-neutral-400 text-xs">{ev.timestamp}</span>
+                          <p className="text-neutral-200">{ev.event}</p>
+                          {ev.cause && <p className="text-xs text-neutral-400 italic mt-1">Cause: {ev.cause}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </div>
+              <div className="lg:col-span-2 space-y-5">
+                <Card title="Git References" icon={<GitBranch size={16} />}>
+                  <div className="flex flex-wrap gap-2">
+                    {catchUpStatic.researcher.gitRefs.map(r => <Badge key={r} variant="info"><GitBranch size={12} className="mr-1" />{r}</Badge>)}
+                  </div>
+                </Card>
+                <Card title="Artifacts" icon={<Copy size={16} />}>
+                  <ul className="space-y-1">
+                    {catchUpStatic.researcher.artifacts.map(p => <li key={p}><a href="#" className="text-indigo-400 hover:underline text-sm">{p}</a></li>)}
+                  </ul>
+                </Card>
+                <Card title="Lane Attribution" icon={<Filter size={16} />}>
+                  {Object.entries(catchUpStatic.researcher.laneAttribution).map(([lane, actions]) => (
+                    <div key={lane} className="mb-3 last:mb-0">
+                      <div className="text-sm font-medium text-neutral-200 capitalize mb-1">{lane}</div>
+                      <ul className="ml-3 space-y-0.5">
+                        {actions.map(a => <li key={a} className="text-sm text-neutral-400">• {a}</li>)}
+                      </ul>
+                    </div>
+                  ))}
+                </Card>
+                <Card title="Classification Summary" icon={<Shield size={16} />}>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center py-2 border-b border-neutral-700/30">
+                      <span className="text-neutral-400">Regression</span>
+                      <Badge variant="error">Library graph index scope explosion</Badge>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-neutral-700/30">
+                      <span className="text-neutral-400">Progression</span>
+                      <Badge variant="progression">Archivist self-improvement enabled</Badge>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-neutral-700/30">
+                      <span className="text-neutral-400">Swarm & Kernel</span>
+                      <Badge variant="success">Stable — no regressions</Badge>
+                    </div>
+                    <div className="pt-2">
+                      <span className="text-sm text-neutral-400">Unresolved Uncertainty:</span>
+                      <ul className="mt-1 space-y-0.5">
+                        <li className="text-sm text-yellow-400">• Library scope explosion root cause not confirmed</li>
+                        <li className="text-sm text-yellow-400">• Whether desktop revert fully resolved divergence</li>
+                      </ul>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          )}
+        </div>
+      </PageContent>
     </LayoutShell>
   );
 }

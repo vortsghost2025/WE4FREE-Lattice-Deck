@@ -1,8 +1,74 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+    font-size: 17px;
+  }
+  html[data-mode="big-text"] {
+    font-size: 21px;
+  }
+  html[data-mode="big-text"] .text-xs {
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+  html[data-mode="big-text"] .text-sm {
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+  html[data-mode="big-text"] .text-base {
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+  html[data-mode="big-text"] .text-lg {
+    font-size: 1.25rem;
+  }
+  html[data-mode="big-text"] .text-xl {
+    font-size: 1.4rem;
+  }
+  html[data-mode="big-text"] h3 {
+    font-size: 1.15rem;
+  }
+  html[data-mode="big-text"] .p-5 {
+    padding: 1.5rem;
+  }
+  html[data-mode="big-text"] .px-5 {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  html[data-mode="big-text"] .py-3\.5 {
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+  }
+  html[data-mode="big-text"] .gap-6 {
+    gap: 1.75rem;
+  }
+  html[data-mode="big-text"] .py-2\.5 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  html[data-mode="big-text"] .py-2 {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+  html[data-mode="big-text"] .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem;
+  }
+  html[data-mode="big-text"] .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 2rem;
+  }
+  html[data-mode="big-text"] .min-h-\[calc\(100vh-4rem\)\] {
+    min-height: calc(100vh - 5rem);
+  }
+  html[data-mode="big-text"] button,
+  html[data-mode="big-text"] select,
+  html[data-mode="big-text"] input,
+  html[data-mode="big-text"] [tabindex]:not([tabindex="-1"]) {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
   body {
     font-family: var(--font-geist-sans), system-ui, sans-serif;
+    line-height: 1.6;
   }
 
   code, pre {
@@ -27,9 +93,38 @@
   ::selection {
     background-color: rgba(99, 102, 241, 0.3);
   }
+  :focus-visible {
+    outline: 2px solid rgba(99, 102, 241, 0.8);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
 }
 
 @layer components {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  .sr-only.focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
   .live-pulse {
     position: relative;
   }

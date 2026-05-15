@@ -32,6 +32,13 @@ export function Sidebar() {
 
   return (
     <>
+      {open && (
+        <div
+          className="lg:hidden fixed inset-0 z-30 bg-black/50"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
       <button
         className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg bg-neutral-800 border border-neutral-700/50 text-neutral-300"
         onClick={() => setOpen(!open)}

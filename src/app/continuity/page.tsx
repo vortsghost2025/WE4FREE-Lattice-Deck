@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusDot } from '@/components/ui/status-dot';
 import { LayoutShell } from '@/components/layout/shell';
-import { Header } from '@/components/layout/sidebar';
+import { PageContent } from '@/components/layout/page-content';
 import {
   Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
   RefreshCw, Shield, XCircle, Lock, Unlock, ArrowRight,
@@ -37,11 +37,11 @@ function GateProgress({ state }: { state: { currentStep: string; status: string;
         const ia = i === ci, ic = i < ci, ifa = state.status === 'red' && ia;
         return (
           <div key={step} className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${ic ? 'bg-green-500 text-white' : ifa ? 'bg-red-500 text-white' : ia ? 'bg-indigo-500 text-white animate-pulse' : 'bg-surface-800 text-surface-500'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${ic ? 'bg-green-500 text-white' : ifa ? 'bg-red-500 text-white' : ia ? 'bg-indigo-500 text-white animate-pulse' : 'bg-neutral-800 text-neutral-400'}`}>
               {ic ? <CheckCircle2 size={14} /> : stepIcons[step]}
             </div>
-            <span className="text-[10px] mt-1 text-surface-500 hidden xl:block">{stepLabels[step]}</span>
-            {i < steps.length - 1 && <ArrowRight size={12} className="text-surface-600 mx-0.5 hidden xl:block" />}
+                  <span className="text-xs mt-1 text-neutral-400 hidden lg:block">{stepLabels[step]}</span>
+                  {i < steps.length - 1 && <ArrowRight size={12} className="text-neutral-400 mx-0.5 hidden lg:block" />}
           </div>
         );
       })}
@@ -56,100 +56,111 @@ export default function ContinuityPage() {
   if (loading || !data) {
     return (
       <LayoutShell title="Continuity — Restore Gate View">
-        <div className="flex items-center justify-center py-20">
-          <div className="text-surface-400 text-sm">Loading continuity data…</div>
-        </div>
+        <PageContent>
+          <h1 className="sr-only">Continuity</h1>
+          <div className="flex items-center justify-center py-20">
+            <div className="text-neutral-400 text-sm">Loading continuity data…</div>
+          </div>
+        </PageContent>
       </LayoutShell>
     );
   }
 
   return (
     <LayoutShell title="Continuity — Restore Gate View">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">Restore Gate Pipeline</h2>
-            <p className="text-sm text-surface-400 mt-1">Monitor compact/restore/compare/sync/unblock states across all lanes</p>
+      <PageContent>
+        <h1 className="sr-only">Continuity</h1>
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Restore Gate Pipeline</h2>
+              <p className="text-sm text-neutral-400 mt-1">Monitor compact/restore/compare/sync/unblock states across all lanes</p>
+            </div>
+            <Badge variant="info" icon={<Shield size={14} />}>Threshold: ≥93%</Badge>
           </div>
-          <Badge variant="info" icon={<Shield size={14} />}>Threshold: ≥93%</Badge>
-        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card title="Green" icon={<CheckCircle2 size={16} />}>
-            <Metric label="Lanes" value={data.continuity.filter(c => c.status === 'green').length} className="text-green-400" />
-            <span className="text-xs text-surface-500 mt-1">healthy</span>
-          </Card>
-          <Card title="Yellow" icon={<AlertTriangle size={16} />}>
-            <Metric label="Lanes" value={data.continuity.filter(c => c.status === 'yellow').length} className="text-yellow-400" />
-            <span className="text-xs text-surface-500 mt-1">caution</span>
-          </Card>
-          <Card title="Red" icon={<XCircle size={16} />}>
-            <Metric label="Lanes" value={data.continuity.filter(c => c.status === 'red').length} className="text-red-400" />
-            <span className="text-xs text-surface-500 mt-1">action needed</span>
-          </Card>
-          <Card title="Avg Pass Rate" icon={<Activity size={16} />}>
-            <Metric label="%" value={(data.continuity.reduce((a, c) => a + (c.passRate || 0), 0) / data.continuity.length).toFixed(1)} className="text-indigo-400" />
-            <span className="text-xs text-surface-500 mt-1">across lanes</span>
-          </Card>
-        </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card title="Green" icon={<CheckCircle2 size={16} />}>
+              <Metric label="Lanes" value={data.continuity.filter(c => c.status === 'green').length} className="text-green-400" />
+              <span className="text-sm text-neutral-400 mt-1">healthy</span>
+            </Card>
+            <Card title="Yellow" icon={<AlertTriangle size={16} />}>
+              <Metric label="Lanes" value={data.continuity.filter(c => c.status === 'yellow').length} className="text-yellow-400" />
+              <span className="text-sm text-neutral-400 mt-1">caution</span>
+            </Card>
+            <Card title="Red" icon={<XCircle size={16} />}>
+              <Metric label="Lanes" value={data.continuity.filter(c => c.status === 'red').length} className="text-red-400" />
+              <span className="text-sm text-neutral-400 mt-1">action needed</span>
+            </Card>
+            <Card title="Avg Pass Rate" icon={<Activity size={16} />}>
+              <Metric label="%" value={(data.continuity.reduce((a, c) => a + (c.passRate || 0), 0) / data.continuity.length).toFixed(1)} className="text-indigo-400" />
+              <span className="text-sm text-neutral-400 mt-1">across lanes</span>
+            </Card>
+          </div>
 
-        <Card title="Gate Pipeline" icon={<Activity size={16} />}>
-          <div className="overflow-x-auto py-2">
-            <div className="min-w-[800px]">
-              {data.continuity.map((state) => (
-                <div key={state.laneId} className="mb-4 last:mb-0 cursor-pointer" onClick={() => setExp(exp === state.laneId ? null : state.laneId)}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-28 text-right">
-                      <span className="text-sm font-semibold text-surface-100">{state.laneId.charAt(0).toUpperCase() + state.laneId.slice(1)}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <GateProgress state={state} />
-                    </div>
-                    <div className="w-32 text-right">
-                      <Badge variant={state.status as any} className={scMap[state.status]}>{state.passRate}%</Badge>
-                    </div>
-                    <div className="w-8 text-center">
-                      {exp === state.laneId ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="lg:col-span-2">
+              <Card title="Gate Pipeline" icon={<Activity size={16} />}>
+                <div className="overflow-x-auto py-2">
+                  <div className="min-w-[600px]">
+                    {data.continuity.map((state) => (
+                      <div key={state.laneId} className="mb-4 last:mb-0 cursor-pointer" onClick={() => setExp(exp === state.laneId ? null : state.laneId)}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-28 text-right">
+                            <span className="text-sm font-semibold text-neutral-100">{state.laneId.charAt(0).toUpperCase() + state.laneId.slice(1)}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <GateProgress state={state} />
+                          </div>
+                          <div className="w-32 text-right">
+                            <Badge variant={state.status as any} className={scMap[state.status]}>{state.passRate}%</Badge>
+                          </div>
+                          <div className="w-8 text-center">
+                            {exp === state.laneId ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </div>
+                        </div>
+                        {exp === state.laneId && (
+                          <div className="ml-36 mt-3 pt-3 border-t border-neutral-700/30">
+                            <p className="text-sm text-neutral-300">{state.details}</p>
+                            <div className="mt-2 text-sm text-neutral-400">Last updated: {new Date(state.lastUpdated).toLocaleString()}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            </div>
+            <div className="lg:col-span-1">
+              <Card title="Blockers & Alerts" icon={<AlertTriangle size={16} />}>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                    <XCircle size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-sm font-medium text-red-400">Library — UNBLOCK DENIED</div>
+                      <div className="text-sm text-neutral-400">Restore comparison at 88.2%. Graph index scope explosion unresolved.</div>
                     </div>
                   </div>
-                  {exp === state.laneId && (
-                    <div className="ml-36 mt-3 pt-3 border-t border-surface-700/30">
-                      <p className="text-sm text-surface-300">{state.details}</p>
-                      <div className="mt-2 text-xs text-surface-500">Last updated: {new Date(state.lastUpdated).toLocaleString()}</div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
+                    <AlertTriangle size={18} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-sm font-medium text-yellow-400">Library — Branch Divergence</div>
+                      <div className="text-sm text-neutral-400">feat/graph-index-scope is 5 ahead / 3 behind main.</div>
                     </div>
-                  )}
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-neutral-900 border border-neutral-700/30">
+                    <RefreshCw size={18} className="text-neutral-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-sm font-medium text-neutral-300">Control Plane — Behind by 2</div>
+                      <div className="text-sm text-neutral-400">Git: 0 ahead, 2 behind main.</div>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </Card>
             </div>
           </div>
-        </Card>
-
-        <Card title="Blockers & Alerts" icon={<AlertTriangle size={16} />}>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20">
-              <XCircle size={18} className="text-red-400 flex-shrink-0" />
-              <div>
-                <div className="text-sm font-medium text-red-400">Library — UNBLOCK DENIED</div>
-                <div className="text-xs text-surface-400">Restore comparison at 88.2%. Graph index scope explosion unresolved.</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
-              <AlertTriangle size={18} className="text-yellow-400 flex-shrink-0" />
-              <div>
-                <div className="text-sm font-medium text-yellow-400">Library — Branch Divergence</div>
-                <div className="text-xs text-surface-400">feat/graph-index-scope is 5 ahead / 3 behind main.</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-900 border border-surface-700/30">
-              <RefreshCw size={18} className="text-surface-400 flex-shrink-0" />
-              <div>
-                <div className="text-sm font-medium text-surface-300">Control Plane — Behind by 2</div>
-                <div className="text-xs text-surface-400">Git: 0 ahead, 2 behind main.</div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
+        </div>
+      </PageContent>
     </LayoutShell>
   );
 }
@@ -157,8 +168,8 @@ export default function ContinuityPage() {
 function Metric({ label, value, className }: { label: string; value: string | number; className?: string }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs text-surface-400 uppercase tracking-wider font-medium">{label}</span>
-      <span className={`text-lg font-bold ${className || 'text-surface-100'}`}>{value}</span>
+      <span className="text-sm text-neutral-400 uppercase tracking-wider font-medium">{label}</span>
+      <span className={`text-lg font-bold ${className || 'text-neutral-100'}`}>{value}</span>
     </div>
   );
 }

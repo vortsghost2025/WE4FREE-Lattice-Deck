@@ -4,24 +4,23 @@ import { useState, useMemo } from 'react';
 import { useData } from '@/lib/hooks/useData';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { StatusDot } from '@/components/ui/status-dot';
+import { PageContent } from '@/components/layout/page-content';
 import { LayoutShell } from '@/components/layout/shell';
-import { Header } from '@/components/layout/sidebar';
 import {
   Clock, Filter, ChevronDown, ChevronUp, GitBranch,
-  AlertTriangle, CheckCircle2, RefreshCw, Activity, Shield, XCircle,
+  AlertTriangle, Shield,
 } from 'lucide-react';
 
-const eventTypes: Record<string, { label: string; color: string }> = {
-  PROGRESSION: { label: 'Progression', color: 'green' },
-  REGRESSION: { label: 'Regression', color: 'red' },
-  REPAIR: { label: 'Repair', color: 'cyan' },
-  UNDO: { label: 'Undo', color: 'yellow' },
-  OVERWRITE: { label: 'Overwrite', color: 'pink' },
-  DUPLICATION: { label: 'Duplication', color: 'purple' },
-  RECONCILIATION: { label: 'Reconciliation', color: 'blue' },
-  INFRASTRUCTURE: { label: 'Infrastructure', color: 'surface' },
-  UNKNOWN: { label: 'Unknown', color: 'surface' },
+const eventTypes: Record<string, { label: string; dot: string; bg: string; text: string }> = {
+  PROGRESSION: { label: 'Progression', dot: 'bg-green-400', bg: 'bg-green-400/10', text: 'text-green-400' },
+  REGRESSION: { label: 'Regression', dot: 'bg-red-400', bg: 'bg-red-400/10', text: 'text-red-400' },
+  REPAIR: { label: 'Repair', dot: 'bg-cyan-400', bg: 'bg-cyan-400/10', text: 'text-cyan-400' },
+  UNDO: { label: 'Undo', dot: 'bg-yellow-400', bg: 'bg-yellow-400/10', text: 'text-yellow-400' },
+  OVERWRITE: { label: 'Overwrite', dot: 'bg-pink-400', bg: 'bg-pink-400/10', text: 'text-pink-400' },
+  DUPLICATION: { label: 'Duplication', dot: 'bg-purple-400', bg: 'bg-purple-400/10', text: 'text-purple-400' },
+  RECONCILIATION: { label: 'Reconciliation', dot: 'bg-blue-400', bg: 'bg-blue-400/10', text: 'text-blue-400' },
+  INFRASTRUCTURE: { label: 'Infrastructure', dot: 'bg-neutral-400', bg: 'bg-neutral-400/10', text: 'text-neutral-400' },
+  UNKNOWN: { label: 'Unknown', dot: 'bg-neutral-500', bg: 'bg-neutral-500/10', text: 'text-neutral-500' },
 };
 
 const laneNames: Record<string, string> = {
@@ -29,6 +28,24 @@ const laneNames: Record<string, string> = {
 };
 
 const surfaceNames: Record<string, string> = { desktop: 'Desktop', headless: 'Headless', gastown: 'Gastown', vps: 'VPS' };
+
+const typeColorMap: Record<string, string> = {
+  PROGRESSION: 'active', REGRESSION: 'error', REPAIR: 'info', UNDO: 'warning',
+  OVERWRITE: 'error', DUPLICATION: 'info', RECONCILIATION: 'active', INFRASTRUCTURE: 'idle', UNKNOWN: 'idle',
+};
+
+function SelectFilter({ value, onChange, options, label }: { value: string | number; onChange: (v: string) => void; options: { value: string; label: string }[]; label: string }) {
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      aria-label={label}
+      className="bg-neutral-800 border border-neutral-700/50 rounded-lg px-3 py-2 text-sm text-neutral-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent appearance-none pr-8"
+    >
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+}
 
 export default function TimelinePage() {
   const { timeline: data, loading } = useData();
@@ -54,7 +71,7 @@ export default function TimelinePage() {
     return (
       <LayoutShell title="Timeline — Evolution Audit">
         <div className="flex items-center justify-center py-20">
-          <div className="text-surface-400 text-sm">Loading timeline data…</div>
+          <div className="text-neutral-400 text-sm">Loading timeline data…</div>
         </div>
       </LayoutShell>
     );
@@ -62,98 +79,136 @@ export default function TimelinePage() {
 
   return (
     <LayoutShell title="Timeline — Evolution Audit">
-      <div className="space-y-6">
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-          {Object.entries(stats).map(([type, count]) => {
-            const info = eventTypes[type] || eventTypes.UNKNOWN;
-            return (
-              <Card key={type} title={info.label} className="text-center">
-                <div className="text-2xl font-bold" style={{ color: `var(--${info.color}-400)` || '#64748b' }}>{count}</div>
-                <div className="text-xs text-surface-500 mt-1">events</div>
-              </Card>
-            );
-          })}
-        </div>
+      <PageContent>
+        <h1 className="sr-only">Timeline</h1>
+        <div className="space-y-5">
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Filter size={16} className="text-surface-400" />
-          <select value={filters.hours} onChange={e => setFilters({ ...filters, hours: parseInt(e.target.value) })}
-            className="bg-surface-800 border border-surface-700/30 rounded-lg px-3 py-1.5 text-sm text-surface-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent">
-            <option value={6}>Last 6h</option><option value={12}>Last 12h</option>
-            <option value={24}>Last 24h</option><option value={48}>Last 48h</option><option value={168}>Last 7 days</option>
-          </select>
-          <select value={filters.lane} onChange={e => setFilters({ ...filters, lane: e.target.value })}
-            className="bg-surface-800 border border-surface-700/30 rounded-lg px-3 py-1.5 text-sm text-surface-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent">
-            <option value="all">All Lanes</option>
-            <option value="archivist">Archivist</option><option value="library">Library</option>
-            <option value="swarmmind">SwarmMind</option><option value="kernel">Kernel</option>
-            <option value="control-plane">Control Plane</option>
-          </select>
-          <select value={filters.type} onChange={e => setFilters({ ...filters, type: e.target.value })}
-            className="bg-surface-800 border border-surface-700/30 rounded-lg px-3 py-1.5 text-sm text-surface-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent">
-            <option value="all">All Types</option>
-            {Object.entries(eventTypes).map(([key, val]) => <option key={key} value={key}>{val.label}</option>)}
-          </select>
-          <span className="text-xs text-surface-500 ml-auto">{filteredEvents.length} events</span>
-        </div>
-
-        <div className="space-y-2">
-          {filteredEvents.map((ev) => {
-            const info = eventTypes[ev.type] || eventTypes.UNKNOWN;
-            const ex = expanded === ev.id;
-            return (
-              <Card key={ev.id} className="cursor-pointer hover:border-surface-600/50 transition-colors hover:bg-surface-800/10"
-                headerAction={
-                  <div className="flex items-center gap-2">
-                    <Badge variant={info.color as any}>{info.label}</Badge>
-                    <button onClick={(e) => { e.stopPropagation(); setExpanded(ex ? null : ev.id); }} className="p-1 text-surface-400 hover:text-surface-200">
-                      {ex ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                    </button>
-                  </div>
-                }>
-                <div onClick={() => setExpanded(ex ? null : ev.id)}>
-                  <div className="flex items-start gap-3">
-                    <div className={`w-1 h-1 rounded-full mt-2 flex-shrink-0 bg-${info.color}-400`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-surface-100">{ev.title}</span>
-                        <Badge variant={info.color as any} className="text-[10px]">{ev.type}</Badge>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-surface-500">
-                        <span><Clock size={12} className="inline mr-0.5" />{new Date(ev.timestamp).toLocaleString()}</span>
-                        <span>•</span><span>{laneNames[ev.laneId]}</span>
-                        {ev.surfaceId && <span>• {surfaceNames[ev.surfaceId]}</span>}
-                        <span>• {ev.classification}</span>
-                      </div>
-                    </div>
-                  </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {Object.entries(stats).map(([type, count]) => {
+              const info = eventTypes[type] || eventTypes.UNKNOWN;
+              return (
+                <div key={type} className={`${info.bg} rounded-lg px-4 py-3 text-center border border-neutral-700/30`}>
+                  <div className={`text-2xl font-bold ${info.text}`}>{count}</div>
+                  <div className="text-xs text-neutral-400 mt-1">{info.label}</div>
                 </div>
-                {ex && (
-                  <div className="mt-4 pt-4 border-t border-surface-700/30 space-y-3 text-sm">
-                    <p className="text-surface-300">{ev.description}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div><span className="text-xs uppercase tracking-wider font-medium text-surface-500">Git Ref</span>
-                        <div className="font-mono text-xs flex items-center gap-1 mt-1"><GitBranch size={12} />{ev.gitRef || '—'}</div>
-                      </div>
-                      <div><span className="text-xs uppercase tracking-wider font-medium text-surface-500">Attribution</span>
-                        <div className="flex items-center gap-1 mt-1"><Shield size={12} />{ev.attribution}</div>
-                      </div>
-                      {ev.artifactPath && (
-                        <div className="col-span-2"><span className="text-xs uppercase tracking-wider font-medium text-surface-500">Artifact</span>
-                          <div className="mt-1"><a href="#" className="text-indigo-400 hover:underline text-xs">{ev.artifactPath}</a></div>
+              );
+            })}
+          </div>
+
+      <div className="flex flex-wrap items-center gap-3 p-4 bg-neutral-800/40 rounded-lg border border-neutral-700/30" role="search" aria-label="Filter timeline events">
+        <Filter size={16} className="text-neutral-400" aria-hidden="true" />
+        <SelectFilter
+          label="Time range"
+          value={filters.hours}
+          onChange={v => setFilters({ ...filters, hours: parseInt(v) })}
+          options={[
+            { value: '6', label: 'Last 6h' }, { value: '12', label: 'Last 12h' },
+            { value: '24', label: 'Last 24h' }, { value: '48', label: 'Last 48h' },
+            { value: '168', label: 'Last 7 days' },
+          ]}
+        />
+        <SelectFilter
+          label="Filter by lane"
+          value={filters.lane}
+          onChange={v => setFilters({ ...filters, lane: v })}
+          options={[
+            { value: 'all', label: 'All Lanes' },
+            ...Object.entries(laneNames).map(([k, v]) => ({ value: k, label: v })),
+          ]}
+        />
+        <SelectFilter
+          label="Filter by event type"
+          value={filters.type}
+          onChange={v => setFilters({ ...filters, type: v })}
+          options={[
+            { value: 'all', label: 'All Types' },
+            ...Object.entries(eventTypes).map(([k, v]) => ({ value: k, label: v.label })),
+          ]}
+        />
+            <span className="text-sm text-neutral-400 ml-auto font-mono">{filteredEvents.length} events</span>
+          </div>
+
+          <div className="space-y-2">
+            {filteredEvents.map((ev) => {
+              const info = eventTypes[ev.type] || eventTypes.UNKNOWN;
+              const isExpanded = expanded === ev.id;
+              return (
+                <Card
+                  key={ev.id}
+                  className={`cursor-pointer hover:bg-neutral-800/40 transition-colors ${isExpanded ? 'ring-1 ring-neutral-700/60' : ''}`}
+                  headerAction={
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded ${info.bg} ${info.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${info.dot}`} />
+                        {info.label}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setExpanded(isExpanded ? null : ev.id); }}
+                        className="p-1 text-neutral-400 hover:text-neutral-200 transition-colors"
+                        aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                      >
+                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      </button>
+                    </div>
+                  }
+                >
+                  <div onClick={() => setExpanded(isExpanded ? null : ev.id)}>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${info.dot}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-neutral-100">{ev.title}</span>
                         </div>
-                      )}
+                        <div className="flex items-center gap-3 mt-1.5 text-xs text-neutral-400 flex-wrap">
+                          <span className="flex items-center gap-1"><Clock size={12} />{new Date(ev.timestamp).toLocaleString()}</span>
+                          <span>•</span>
+                          <span>{laneNames[ev.laneId] || ev.laneId}</span>
+                          {ev.surfaceId && (<><span>•</span><span>{surfaceNames[ev.surfaceId]}</span></>)}
+                          <span>•</span>
+                          <span>{ev.classification}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
+                  {isExpanded && (
+                    <div className="mt-4 pt-4 border-t border-neutral-700/30 space-y-3 text-sm">
+                      <p className="text-neutral-300">{ev.description}</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <span className="text-xs uppercase tracking-wider font-medium text-neutral-400">Git Ref</span>
+                          <div className="font-mono text-xs flex items-center gap-1 mt-1 text-neutral-200">
+                            <GitBranch size={12} />{ev.gitRef || '—'}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-xs uppercase tracking-wider font-medium text-neutral-400">Attribution</span>
+                          <div className="flex items-center gap-1 mt-1 text-neutral-200">
+                            <Shield size={12} />{ev.attribution}
+                          </div>
+                        </div>
+                        {ev.artifactPath && (
+                          <div className="col-span-2">
+                            <span className="text-xs uppercase tracking-wider font-medium text-neutral-400">Artifact</span>
+                            <div className="mt-1">
+                              <span className="text-indigo-400 text-xs font-mono">{ev.artifactPath}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+            {filteredEvents.length === 0 && (
+              <Card title="No Events">
+                <p className="text-sm text-neutral-400">No timeline events match the current filters.</p>
               </Card>
-            );
-          })}
-          {filteredEvents.length === 0 && (
-            <Card title="No Events"><p className="text-sm text-surface-400">No timeline events match the current filters.</p></Card>
-          )}
+            )}
+          </div>
+
         </div>
-      </div>
+      </PageContent>
     </LayoutShell>
   );
 }

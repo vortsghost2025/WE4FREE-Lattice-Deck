@@ -4,10 +4,9 @@ import { useState } from 'react';
 import { useData } from '@/lib/hooks/useData';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { StatusDot } from '@/components/ui/status-dot';
+import { PageContent } from '@/components/layout/page-content';
 import { LayoutShell } from '@/components/layout/shell';
-import { Header } from '@/components/layout/sidebar';
-import { Info, Server, LayoutDashboard, Tv } from 'lucide-react';
+import { Info, Server } from 'lucide-react';
 import { ShieldIcon } from '@/components/ui/shield-icon';
 import type { SurfaceId, EntityId } from '@/lib/types';
 
@@ -69,11 +68,20 @@ const matrixData: SurfaceCellData[][] = [
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs text-surface-400 uppercase tracking-wider font-medium">{label}</span>
-      <span className="text-sm font-semibold text-surface-100">{value}</span>
+      <span className="text-xs text-neutral-400 uppercase tracking-wider font-medium">{label}</span>
+      <span className="text-sm font-semibold text-neutral-100 font-mono">{value}</span>
     </div>
   );
 }
+
+const stateStyles: Record<SurfaceCellData['state'], string> = {
+  active: 'bg-green-500/15 text-green-400 border-green-500/20',
+  executing: 'bg-green-500/15 text-green-400 border-green-500/20',
+  supervising: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
+  wip: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
+  coordinating: 'bg-purple-500/15 text-purple-400 border-purple-500/20',
+  none: 'bg-neutral-800/40 text-neutral-500 border-neutral-700/30',
+};
 
 export default function MatrixPage() {
   const { lanes, status: data } = useData();
@@ -83,82 +91,92 @@ export default function MatrixPage() {
 
   return (
     <LayoutShell title="Surface Matrix">
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold">Surface Matrix</h2>
-          <p className="text-sm text-surface-400 mt-1">Where each lane is alive across execution surfaces</p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr>
-                <th className="text-left p-3 text-xs text-surface-400 uppercase tracking-wider font-medium border-b border-surface-700/30 bg-surface-900">Lane / Surface</th>
-                {(['desktop', 'headless', 'gastown', 'vps'] as SurfaceId[]).map(s => (
-                  <th key={s} className="p-3 text-center text-xs text-surface-400 uppercase tracking-wider font-medium border-b border-surface-700/30 bg-surface-900">{s.charAt(0).toUpperCase() + s.slice(1)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {matrixData.map((row) => (
-                <tr key={row[0].entityId} className="border-b border-surface-700/20">
-                  <td className="p-3 align-top bg-surface-950/50 min-w-[140px]">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{row[0].entityId === 'control-plane' ? <ShieldIcon size={14} /> : <Server size={14} />}</span>
-                      <div>
-                        <div className="text-sm font-medium text-surface-100">{entityNames[row[0].entityId]}</div>
-                        <div className="text-xs text-surface-500">{row[0].entityId}</div>
-                      </div>
-                    </div>
-                  </td>
-                  {row.map((c) => {
-                    const isSel = selected?.entity === c.entityId && selected?.surface === c.surfaceId;
-                    const sc = { active: 'bg-green-500/20 text-green-400', executing: 'bg-green-500/20 text-green-400', supervising: 'bg-blue-500/20 text-blue-400', wip: 'bg-yellow-500/20 text-yellow-400', coordinating: 'bg-purple-500/20 text-purple-400', none: 'bg-surface-800/50 text-surface-500' }[c.state];
-                    return (
-                      <td key={c.surfaceId} className="p-3 align-top cursor-pointer hover:bg-surface-800/30" onClick={() => setSelected(isSel ? null : { entity: c.entityId, surface: c.surfaceId })}>
-                        <div className={`rounded-lg p-3 border ${sc} ${isSel ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-surface-950' : ''}`}>
-                          <div className="text-sm font-medium">{c.label}</div>
-                          {c.state !== 'none' && (
-                            <div className="text-xs mt-1 text-surface-400">
-                              <div>{c.repo}/{c.branch}</div>
-                              {c.lastChange && <div>Last: {c.lastChange}</div>}
-                              {c.agent && <div>Agent: {c.agent}</div>}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
+      <PageContent>
+        <div className="space-y-5">
+          <div>
+            <h2 className="text-xl font-semibold text-neutral-100">Surface Matrix</h2>
+            <p className="text-sm text-neutral-400 mt-1">Where each lane is alive across execution surfaces</p>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-neutral-700/30">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-neutral-900/80">
+                  <th className="text-left p-3 text-xs text-neutral-400 uppercase tracking-wider font-medium border-b border-neutral-700/30">Lane / Surface</th>
+                  {(['desktop', 'headless', 'gastown', 'vps'] as SurfaceId[]).map(s => (
+                    <th key={s} className="p-3 text-center text-xs text-neutral-400 uppercase tracking-wider font-medium border-b border-neutral-700/30 whitespace-nowrap">
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {matrixData.map((row) => (
+                  <tr key={row[0].entityId} className="border-b border-neutral-700/20">
+                    <td className="p-3 align-top bg-neutral-950/50 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg text-neutral-400">
+                          {row[0].entityId === 'control-plane' ? <ShieldIcon size={14} /> : <Server size={14} />}
+                        </span>
+                        <div>
+                          <div className="text-sm font-medium text-neutral-100">{entityNames[row[0].entityId]}</div>
+                          <div className="text-xs text-neutral-400 font-mono">{row[0].entityId}</div>
+                        </div>
+                      </div>
+                    </td>
+                    {row.map((c) => {
+                      const isSel = selected?.entity === c.entityId && selected?.surface === c.surfaceId;
+                      const sc = stateStyles[c.state];
+                      return (
+                        <td key={c.surfaceId} className="p-2 align-top cursor-pointer" onClick={() => setSelected(isSel ? null : { entity: c.entityId, surface: c.surfaceId })}>
+                          <div className={`rounded-lg p-3 border ${sc} transition-colors hover:brightness-110 ${isSel ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-neutral-950' : ''}`}>
+                            <div className="text-sm font-medium">{c.label}</div>
+                            {c.state !== 'none' && (
+                              <div className="text-xs mt-1.5 text-neutral-400 space-y-0.5">
+                                <div className="font-mono truncate">{c.repo}/{c.branch}</div>
+                                {c.lastChange && <div>Last: {c.lastChange}</div>}
+                                {c.agent && <div>Agent: {c.agent}</div>}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-        {cell && (
-          <Card title={`${entityNames[cell.entityId]} — ${cell.surfaceId}`} icon={<Info size={16} />} headerAction={<Badge variant={cell.state === 'none' ? 'idle' : 'active'}>{cell.state}</Badge>}>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Metric label="Repository" value={cell.repo} />
-                <Metric label="Branch" value={cell.branch} />
-                <Metric label="Last Change" value={cell.lastChange || '—'} />
-                <Metric label="Agent" value={cell.agent || '—'} />
-              </div>
-              <div>
-                <div className="text-xs text-surface-400 uppercase tracking-wider font-medium mb-1">Details</div>
-                <p className="text-sm text-surface-300">{cell.details}</p>
-              </div>
-              {cell.logs.length > 0 && (
-                <div>
-                  <div className="text-xs text-surface-400 uppercase tracking-wider font-medium mb-1">Recent Logs</div>
-                  <div className="bg-surface-900 rounded p-2 font-mono text-xs space-y-0.5 max-h-40 overflow-y-auto">
-                    {cell.logs.map((l, i) => <div key={i} className="text-surface-400">{l}</div>)}
-                  </div>
+          {cell && (
+            <Card
+              title={`${entityNames[cell.entityId]} — ${cell.surfaceId}`}
+              icon={<Info size={16} />}
+              headerAction={<Badge variant={cell.state === 'none' ? 'idle' : 'active'}>{cell.state}</Badge>}
+            >
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Metric label="Repository" value={cell.repo} />
+                  <Metric label="Branch" value={cell.branch} />
+                  <Metric label="Last Change" value={cell.lastChange || '—'} />
+                  <Metric label="Agent" value={cell.agent || '—'} />
                 </div>
-              )}
-            </div>
-          </Card>
-        )}
-      </div>
+                <div>
+                  <div className="text-xs text-neutral-400 uppercase tracking-wider font-medium mb-1">Details</div>
+                  <p className="text-sm text-neutral-300">{cell.details}</p>
+                </div>
+                {cell.logs.length > 0 && (
+                  <div>
+                    <div className="text-xs text-neutral-400 uppercase tracking-wider font-medium mb-1">Recent Logs</div>
+                    <div className="bg-neutral-900 rounded-lg p-3 font-mono text-xs space-y-0.5 max-h-40 overflow-y-auto border border-neutral-700/30">
+                      {cell.logs.map((l, i) => <div key={i} className="text-neutral-400">{l}</div>)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+        </div>
+      </PageContent>
     </LayoutShell>
   );
 }

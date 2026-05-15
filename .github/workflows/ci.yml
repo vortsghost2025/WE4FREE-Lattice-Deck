@@ -10,16 +10,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-  - name: Install
+    - uses: actions/checkout@v4
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Install
       run: npm ci --legacy-peer-deps
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Build
-        run: npm run build
-  - name: Run tests
+    - name: Typecheck
+      run: npm run typecheck
+    - name: Build
+      run: npm run build
+    - name: Run tests
       run: npx vitest run
+    - name: Provenance gate
+      run: node scripts/verify-provenance.mjs
