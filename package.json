@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "test": "vitest",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
@@ -18,13 +19,16 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@testing-library/react": "^14.0.0",
     "@types/node": "^24.10.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "@tailwindcss/postcss": "^4.1.17",
-    "tailwindcss": "^4.1.17",
     "eslint": "^9.39.1",
-    "eslint-config-next": "^16.0.0"
+    "eslint-config-next": "^16.0.0",
+    "jsdom": "^22.1.0",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.1"
   }
 }
