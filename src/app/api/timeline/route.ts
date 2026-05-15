@@ -7,5 +7,5 @@ export async function GET(request: Request) {
   const lane = searchParams.get('lane');
   const type = searchParams.get('type');
 
-  return NextResponse.json(fetchTimeline(hours, lane || undefined, type || undefined));
+  return NextResponse.json(fetchTimeline(hours, lane as any || undefined, type as any || undefined));
 }
